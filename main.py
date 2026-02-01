@@ -16,7 +16,13 @@ class Sprite:
 class Player(Sprite):
     def __init__(self, center, image, speed):
         super().__init__(center, image)
+        self.start_center = center
         self.speed = speed
+        self.move_up = False
+        self.move_down = False
+
+    def reset(self):
+        self.rect.center = self.start_center
         self.move_up = False
         self.move_down = False
 
@@ -36,8 +42,15 @@ class Player(Sprite):
 class Ball(Sprite):
     def __init__(self, center, image, speed):
         super().__init__(center, image)
+        self.start_center = center
+        self.start_speed = speed
         self.speed = speed
         self.velocity = pygame.Vector2(1, 0)
+
+    def reset(self):
+        self.rect.center = self.start_center
+        self.speed = self.start_speed
+        self.velocity.update(1, 0)
 
     def check_x_collision(self, player):
         if self.rect.colliderect(player.rect):
@@ -76,9 +89,11 @@ class Ball(Sprite):
             self.velocity.y = -self.velocity.y
 
 
+pygame.init()
 window = pygame.Window("Ping Pong", (800, 600), pygame.WINDOWPOS_CENTERED)
 surface = window.get_surface()  # surface - поверхность
 clock = pygame.Clock()
+font = pygame.Font(None, 64)
 
 image = pygame.Surface((40, 100))
 image.fill("orange")
@@ -91,6 +106,9 @@ pygame.draw.aacircle(image, "red", (15, 15), 15)
 ball = Ball((400, 300), image, 5)
 
 running = True
+left_score = 0
+right_score = 0
+
 while running:
     # Обработка событий
     for event in pygame.event.get():
@@ -130,10 +148,16 @@ while running:
     right_player.update()
     ball.update(left_player, right_player)
 
-    # if ball.rect.colliderect(left_player.rect) or ball.rect.colliderect(
-    #     right_player.rect
-    # ):
-    #     ball.velocity.x = -ball.velocity.x
+    if ball.rect.right >= 800:
+        left_score += 1
+        left_player.reset()
+        right_player.reset()
+        ball.reset()
+    if ball.rect.left <= 0:
+        right_score += 1
+        left_player.reset()
+        right_player.reset()
+        ball.reset()
 
     # Отрисовка
     surface.fill("white")
@@ -141,6 +165,11 @@ while running:
     left_player.render(surface)
     right_player.render(surface)
     ball.render(surface)
+
+    text = f"{left_score}:{right_score}"
+    text_image = font.render(text, True, "black")
+    xy = (400 - text_image.get_width() / 2, 10)
+    surface.blit(text_image, xy)
 
     window.flip()
     clock.tick(60)
